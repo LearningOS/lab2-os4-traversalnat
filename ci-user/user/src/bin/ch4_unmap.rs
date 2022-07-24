@@ -15,16 +15,19 @@ fn main() -> i32 {
     let start: usize = 0x10000000;
     let len: usize = 4096;
     let prot: usize = 3;
-    assert_eq!(0, mmap(start, len, prot));
-    assert_eq!(mmap(start + len, len * 2, prot), 0);
-    assert_eq!(munmap(start, len), 0);
-    assert_eq!(mmap(start - len, len + 1, prot), 0);
+    assert_eq!(0, mmap(start - len, len * 4, prot));
+    // assert_eq!(mmap(start + len, len * 2, prot), 0);
+    // assert_eq!(munmap(start, len), 0);
+    // assert_eq!(mmap(start - len, len + 1, prot), 0);
+    println!("22!");
     for i in (start - len)..(start + len * 3) {
         let addr: *mut u8 = i as *mut u8;
         unsafe {
             *addr = i as u8;
+            // println!("{}, {}", i, *addr);
         }
     }
+    println!("29!");
     for i in (start - len)..(start + len * 3) {
         let addr: *mut u8 = i as *mut u8;
         unsafe {

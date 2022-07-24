@@ -1,9 +1,11 @@
 //! Process management syscalls
 
-use crate::config::MAX_SYSCALL_NUM;
+use core::convert::TryInto;
+
+use crate::config::{MAX_SYSCALL_NUM, PAGE_SIZE};
 use crate::task::{exit_current_and_run_next, get_current_task, suspend_current_and_run_next, TaskStatus, current_user_token};
 use crate::timer::get_time_us;
-use crate::mm::copyout;
+use crate::mm::{PTEFlags, copyout, PageTable};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -49,17 +51,24 @@ pub fn sys_set_priority(_prio: isize) -> isize {
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
-    -1
+    // 使用 FRAME_ALLOCATOR 获取一个 FrameTracker
+    // 将 FrameTracker 物理页面与 _start (虚拟地址) 映射至一块
+    if _port & !0x7 != 0 || _port & 0x7 == 0 || _start % PAGE_SIZE != 0 {
+        return -1;
+    }
+
+    let flags = PTEFlags::V | PTEFlags::U | PTEFlags::from_bits_truncate((_port << 1) as u8);
+
+    PageTable::from_token(current_user_token()).kmap(_start, _len, flags)
 }
 
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    -1
+    PageTable::from_token(current_user_token()).kunmap(_start, _len)
 }
 
 // YOUR JOB: 引入虚地址后重写 sys_task_info
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     let task = get_current_task();
     copyout(current_user_token(), ti as usize, &task as *const TaskInfo as *const u8, core::mem::size_of::<TaskInfo>());
-
     0
 }
