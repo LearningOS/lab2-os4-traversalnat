@@ -1,7 +1,7 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use super::address::VPNRange;
-use super::{page_alloc, page_dealloc, frame_alloc, FrameTracker, PhysPageNum, StepByOne, PhysAddr, VirtAddr, VirtPageNum};
+use super::{frame_alloc, FrameTracker, PhysPageNum, StepByOne, PhysAddr, VirtAddr, VirtPageNum};
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
@@ -131,45 +131,6 @@ impl PageTable {
     }
     pub fn token(&self) -> usize {
         8usize << 60 | self.root_ppn.0
-    }
-
-    pub fn kmap(&mut self, start: usize, len: usize, flags: PTEFlags) -> isize {
-        let start_va = VirtAddr::from(start).floor();
-        let end_va = VirtAddr::from(start + len).ceil();
-        // println!("map {:#?} : {:#?}, {:#?}", start_va, end_va, flags);
-        for vpn in VPNRange::new(start_va, end_va) {
-            if let Some(pte) = self.translate(vpn) {
-                if pte.is_valid() {
-                    return -1;
-                }
-            }
-
-            if let Some(ppn) = page_alloc() {
-                self.map(vpn, ppn, flags);
-            } else {
-                return -1;
-            }
-        }
-        0
-    }
-
-    pub fn kunmap(&mut self, start: usize, len: usize) -> isize {
-        let start_va = VirtAddr::from(start).floor();
-        let end_va = VirtAddr::from(start + len).ceil();
-        // println!("unmap {:#?} : {:#?}", start_va, end_va);
-        for vpn in VPNRange::new(start_va, end_va) {
-            if let Some(pte) = self.translate(vpn) {
-                if pte.is_valid() {
-                    self.unmap(vpn);
-                    page_dealloc(pte.ppn());
-                } else {
-                    return -1;
-                }
-            } else {
-                return -1;
-            }
-        }
-        0
     }
 }
 

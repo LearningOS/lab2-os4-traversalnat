@@ -3,7 +3,7 @@
 use core::convert::TryInto;
 
 use crate::config::{MAX_SYSCALL_NUM, PAGE_SIZE};
-use crate::task::{exit_current_and_run_next, get_current_task, suspend_current_and_run_next, TaskStatus, current_user_token};
+use crate::task::{exit_current_and_run_next, get_current_task, suspend_current_and_run_next, TaskStatus, current_user_token, kmap, kunmap};
 use crate::timer::get_time_us;
 use crate::mm::{PTEFlags, copyout, PageTable};
 
@@ -59,11 +59,11 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
 
     let flags = PTEFlags::V | PTEFlags::U | PTEFlags::from_bits_truncate((_port << 1) as u8);
 
-    PageTable::from_token(current_user_token()).kmap(_start, _len, flags)
+    kmap(_start, _len, flags)
 }
 
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    PageTable::from_token(current_user_token()).kunmap(_start, _len)
+    kunmap(_start, _len)
 }
 
 // YOUR JOB: 引入虚地址后重写 sys_task_info

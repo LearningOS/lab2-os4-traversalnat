@@ -32,6 +32,7 @@ impl Debug for FrameTracker {
 
 impl Drop for FrameTracker {
     fn drop(&mut self) {
+        println!("drop {:#?}", self);
         frame_dealloc(self.ppn);
     }
 }
@@ -113,18 +114,6 @@ pub fn frame_alloc() -> Option<FrameTracker> {
 
 /// deallocate a frame
 pub fn frame_dealloc(ppn: PhysPageNum) {
-    FRAME_ALLOCATOR.exclusive_access().dealloc(ppn);
-}
-
-/// allocate a page 
-pub fn page_alloc() -> Option<PhysPageNum> {
-    FRAME_ALLOCATOR
-        .exclusive_access()
-        .alloc()
-}
-
-/// deallocate a page 
-pub fn page_dealloc(ppn: PhysPageNum) {
     FRAME_ALLOCATOR.exclusive_access().dealloc(ppn);
 }
 

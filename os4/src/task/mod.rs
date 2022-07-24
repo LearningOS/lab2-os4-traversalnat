@@ -18,6 +18,7 @@ use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_app_data, get_num_app};
 use crate::sync::UPSafeCell;
 use crate::timer::{get_time_us, get_time};
+use crate::mm::{PTEFlags};
 use crate::trap::TrapContext;
 use crate::syscall::TaskInfo;
 use alloc::vec::Vec;
@@ -174,6 +175,18 @@ impl TaskManager {
         let current_task = inner.current_task;
         inner.tasks[current_task].syscall_times[syscall_id] += 1;
     }
+
+    pub fn kmap(&self, start: usize, len: usize, flags: PTEFlags) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].memory_set.kmap(start, len, flags)
+    }
+
+    pub fn kunmap(&self, start: usize, len: usize) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].memory_set.kunmap(start, len)
+    }
 }
 
 /// Run the first task in task list.
@@ -225,4 +238,12 @@ pub fn get_current_task() -> TaskInfo {
 
 pub fn increase_syscall_times(syscall_id: usize) {
     TASK_MANAGER.increase_syscall_times(syscall_id);
+}
+
+pub fn kmap(start: usize, len: usize, flags: PTEFlags) -> isize {
+    TASK_MANAGER.kmap(start, len, flags)
+}
+
+pub fn kunmap(start: usize, len: usize) -> isize {
+    TASK_MANAGER.kunmap(start, len)
 }
